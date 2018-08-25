@@ -9,7 +9,7 @@ import config
 
 edit_protected = []
 api_base = "https://en.wikipedia.org/w/api.php?format=json&action=query&list=allpages&apprtype="
-api_end = "&apfilterredir=nonredirects&apprlevel=autoconfirmed&aplimit=500&apcontinue="
+api_end = "&apfilterredir=nonredirects&apprlevel=autoconfirmed&aplimit=500&rvslots=main&apcontinue="
 username = 'TheMagikBOT'
 password = config.password()
 baseurl = 'https://en.wikipedia.org/w/'
@@ -93,7 +93,7 @@ def find_protection_level(title):
     
     #Create full query URL
     api_base = "https://en.wikipedia.org/w/api.php?action=query&titles="
-    api_end = "&prop=info%7Cflagged&inprop=protection&format=json"
+    api_end = "&prop=info%7Cflagged&inprop=protection&format=json&rvslots=main"
     api_link = api_base + title + api_end
     
     #JSON response
@@ -118,7 +118,7 @@ def find_protection_level(title):
         
 
 get_edit_protected()
-edit_protected = edit_protected[::-1] #Can be used to reverse list of end has not been done in a while.
+#edit_protected = edit_protected[::-1] #Can be used to reverse list of end has not been done in a while.
 
 for title in edit_protected:
 
