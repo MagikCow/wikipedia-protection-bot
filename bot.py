@@ -71,34 +71,22 @@ def allow_bots(text, user): #Verify that TheMagikBOT is allowed to edit the page
 
 
 def add(title, message):
-    # Login request
-    payload = {'action': 'query', 'format': 'json', 'utf8': '', 'meta': 'tokens', 'type': 'login'}
-    r1 = requests.post(baseurl + 'api.php', data=payload)
+    site = pywikibot.Site()
+    page = pywikibot.Page(site, title)
 
-    # login confirm
-    login_token = r1.json()['query']['tokens']['logintoken']
-    payload = {'action': 'login', 'format': 'json', 'utf8': '', 'lgname': username, 'lgpassword': password, 'lgtoken': login_token}
-    r2 = requests.post(baseurl + 'api.php', data=payload, cookies=r1.cookies)
+    text = page.text
 
-    # get edit token2
-    params3 = '?format=json&action=query&meta=tokens&continue='
-    r3 = requests.get(baseurl + 'api.php' + params3, cookies=r2.cookies)
-    edit_token = r3.json()['query']['tokens']['csrftoken']
+    text = message + text
 
-    edit_cookie = r2.cookies.copy()
-    edit_cookie.update(r3.cookies)
+    try:
+        if page.text != text:
+            print(title)
+            page.text = text
+            page.save(summary=summary, minor=True, botflag=True)
+    except Exception as exception:
+        print(exception)
 
-    # save action
-    payload = {'action': 'edit', 'assert': 'user', 'format': 'json', 'utf8': '', 'bot' : 'True', 'minor' : 'True', 'prependtext': message,'summary': summary, 'title': title, 'token': edit_token}
-    r4 = requests.post(baseurl + 'api.php', data=payload, cookies=edit_cookie)
-
-    print (r4.text)
-
-    n += 1
-    t.sleep(0.5)
         
-        
-
 def find_protection_level(title):
     #Normalise URL with underscore for space
     title = title.replace(" ", "_")
@@ -112,53 +100,25 @@ def find_protection_level(title):
     request = requests.get(api_link)
     data = request.json()
 
-    try: #Pending changes
+    try: #Pending changes follows this api result structure
         #Find protection level
         number = list((data['query']['pages'])) #Unique page reference
         data = (data['query']['pages'][number[0]]['flagged']['protection_level'])
         print(data)
         return "pending_changes"
     
-    except KeyError: #edit or move protected - follow same api structure
+    except KeyError: #edit or move protected, both follow same api structure
         try:
             number = list(data['query']['pages'])
             data = data['query']['pages'][number[0]]['protection'][0]['type']
             return data
         
-        except:
+        except: #Neither pending changes nor edit/move protected
             return None
         
-def find_protection_level(title):
-    #Normalise URL with underscore for space
-    title = title.replace(" ", "_")
-    
-    #Create full query URL
-    api_base = "https://en.wikipedia.org/w/api.php?action=query&titles="
-    api_end = "&prop=info%7Cflagged&inprop=protection&format=json"
-    api_link = api_base + title + api_end
-    
-    #JSON response
-    request = requests.get(api_link)
-    data = request.json()
-
-    try: #Pending changes
-        #Find protection level
-        number = list((data['query']['pages'])) #Unique page reference
-        data = (data['query']['pages'][number[0]]['flagged']['protection_level'])
-        return "pending_changes"
-    
-    except KeyError: #edit or move protected - follow same api structure
-        try:
-            number = list(data['query']['pages'])
-            data = data['query']['pages'][number[0]]['protection'][0]['type']
-            return data
-        
-        except:
-            return None
-        
-
 
 get_edit_protected()
+edit_protected = edit_protected[::-1] #Can be used to reverse list of end has not been done in a while.
 
 for title in edit_protected:
 
@@ -174,7 +134,7 @@ for title in edit_protected:
             data = parse(title)
             templates = data.filter_templates()
 
-            if any("{{pp" in title.lower() for title in templates): #all templates that produce padlock icon
+            if any("{{pp" in title.lower() for title in templates): #all these templates that produce padlock icon
                 continue
 
             elif any("{{semiprotected" in title.lower() for title in templates):
@@ -189,8 +149,8 @@ for title in edit_protected:
             else:
                 if allow_bots(data, 'TheMagikBOT') == True:
                     add(title, '{{pp|small=yes}} \n')
-                    print(title)
-                    continue
         except:
             t.sleep(20)
             continue
+
+print("Done!")
